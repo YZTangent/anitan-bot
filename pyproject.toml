@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "anitan-bot"
+version = "0.1.0"
+description = ""
+authors = ["YZTangent <yuanzheng.tan.tyz@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+python-telegram-bot = "^21.5"
+supabase = "^2.7.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
