@@ -30,3 +30,7 @@ def authenticate_club_membership(user_id, username):
         .execute()
         .data
     )
+
+
+def get_groups_titles():
+    return supabase.table("groups").select("*").execute().data

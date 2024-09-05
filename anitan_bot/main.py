@@ -1,6 +1,9 @@
 import database.database as db
-import asyncio
+import telegram_bot.bot
+from telegram.ext import ApplicationBuilder, CommandHandler
+
 
 if __name__ == "__main__":
-    user = db.authenticate_club_membership(111, "yztangent")
-    print(user)
+    app = ApplicationBuilder().token("YOUR TOKEN HERE").build()
+
+    app.run_polling()
