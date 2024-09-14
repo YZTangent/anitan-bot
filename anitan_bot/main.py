@@ -1,6 +1,26 @@
 import os
+import logging
 import database.database as botdb
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    ChatJoinRequestHandler,
+    ChatMemberHandler,
+    CommandHandler,
+    MessageHandler,
+    filters
+)
+
+# logging
+logging.basicConfig(
+    # Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    level=logging.INFO,
+    # Define the log message format
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    # filename='app.log',  # Specify the log file
+    # filemode='a'  # Append mode (append new logs to the end of the file)
+)
+
+logging.getLogger('httpx').setLevel(logging.WARNING)
 
 
 def require_auth(handler):
@@ -23,12 +43,24 @@ async def message_handler(update, context):
 @require_auth
 async def list_groups(update, context):
     groups = botdb.get_groups()
+    groups = "\n".join(
+        [": ".join([group['title'], group['join_link']]) for group in groups])
     await update.message.reply_text(f"Available groups:\n{groups}")
 
 
 @require_auth
 async def auth_test_handler(update, context):
     await update.message.reply_text("you are authenticated")
+
+
+async def track_managed_group(update, context):
+    # logging.info(update, context)
+    pass
+
+
+async def validate_join_req_handler(update, context):
+    # logging.info(update, context)
+    pass
 
 
 async def start_handler(update, context):
@@ -39,6 +71,9 @@ if __name__ == "__main__":
     bot_token: str = os.environ.get("TELEGRAM_BOT_TOKEN")
 
     app = ApplicationBuilder().token(bot_token).build()
+
+    app.add_handler(ChatMemberHandler(track_managed_group))
+    app.add_handler(ChatJoinRequestHandler(validate_join_req_handler))
 
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("testAuth", auth_test_handler))
