@@ -43,6 +43,14 @@ def authenticate_member_by_id(user_id):
     )
 
 
+def verify_admin(user_id):
+    return supabase.rpc("verify_admin", {"user_id": user_id}).execute().data
+
+
+def update_managed_groups(group_id, group_title, join_link):
+    return supabase.table("groups").upsert({"id": group_id, "title": group_title, "join_link": join_link}).execute().data
+
+
 def get_groups():
     return supabase.table("groups").select("title, join_link").execute().data
 
