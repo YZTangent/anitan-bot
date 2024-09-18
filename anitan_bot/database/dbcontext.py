@@ -21,6 +21,14 @@ def get_user_by_telegram_handle(username):
     )
 
 
+# Ideally for users authenticating with the bot for the first time,
+# but realistically we have no way of knowing.
+# This function checks if the user's username exists in the users table
+# with no corresponding telegram id. If true, sets the telegram ID
+# and returns trues.
+#
+# This function should only be called after authenticate_member_by_id
+# returns false.
 def authenticate_member_by_username_and_set_id(username, user_id):
     return (
         supabase.rpc(
@@ -32,6 +40,11 @@ def authenticate_member_by_username_and_set_id(username, user_id):
     )
 
 
+# The source of truth of authentication.
+#
+# The use's telegram ID is checked against the telegram ID column in the database.
+# If the user's telegram ID exists in the users table, we can be sure they are
+# an authenticated user.
 def authenticate_member_by_id(user_id):
     return (
         supabase.rpc(
@@ -48,7 +61,12 @@ def verify_admin(user_id):
 
 
 def update_managed_groups(group_id, group_title, join_link):
-    return supabase.table("groups").upsert({"id": group_id, "title": group_title, "join_link": join_link}).execute().data
+    return (
+        supabase.table("groups")
+        .upsert({"id": group_id, "title": group_title, "join_link": join_link})
+        .execute()
+        .data
+    )
 
 
 def get_groups():
