@@ -105,6 +105,10 @@ async def validate_join_req_handler(update, context):
         pass
 
 
+async def begin_email_auth_handler(update, context):
+    pass
+
+
 async def start_handler(update, context):
     await update.message.reply_text("hiya loser welcome to the club")
 
@@ -127,6 +131,6 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("testAuth", auth_test_handler))
     app.add_handler(CommandHandler("groups", list_groups))
 
-    app.add_handler(MessageHandler(filters.ALL, message_handler))
+    app.add_handler(MessageHandler(filters.TEXT, message_handler))
 
     app.run_polling()
