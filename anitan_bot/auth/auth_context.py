@@ -1,6 +1,7 @@
 import os
 import secrets
 import smtplib
+import database.dbcontext as botdb
 from datetime import datetime, timedelta
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -43,7 +44,3 @@ def send_otp(receiver_email):
 
     except Exception as e:
         print(f"Failed to send OTP. Error: {e}")
-
-
-if __name__ == "__main__":
-    send_otp("t.t@u.nus.edu", generate_otp())

@@ -1,9 +1,21 @@
 import os
+from database.exco_roles import Exco
 from supabase import create_client, Client
 
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
+
+
+# This is a wrapper for the below two function of authentication.
+# This is the old function for authentication that should be used.
+#
+# In an ideal world, the two functions below can be privated and this
+# is the only public function for that, but we can't all have what we want
+def authenticate_user_with_telegram(username, user_id):
+    return authenticate_member_by_id(
+        user_id
+    ) or authenticate_member_by_username_and_set_id(username, user_id)
 
 
 # Ideally for users authenticating with the bot for the first time,
@@ -41,21 +53,36 @@ def authenticate_member_by_id(user_id):
     )
 
 
-def verify_admin(user_id):
-    return supabase.rpc("verify_admin", {"user_id": user_id}).execute().data
+def verify_admin_by_sufficient_authority(user_id, authority):
+    return (
+        supabase.rpc(
+            "verify_admin_by_sufficient_authority",
+            {"user_id": user_id, "authority": authority},
+        )
+        .execute()
+        .data
+    )
 
 
-def update_managed_groups(group_id, group_title, join_link):
+def verify_admin_by_role(user_id, role):
+    return (
+        supabase.rpc("verify_admin_by_role", {"user_id": user_id, "role": role})
+        .execute()
+        .data
+    )
+
+
+def update_managed_groups(group_id, group_role, join_link):
     return (
         supabase.table("groups")
-        .upsert({"id": group_id, "title": group_title, "join_link": join_link})
+        .upsert({"id": group_id, "role": group_role, "join_link": join_link})
         .execute()
         .data
     )
 
 
 def get_groups():
-    return supabase.table("groups").select("title, join_link").execute().data
+    return supabase.table("groups").select("role, join_link").execute().data
 
 
 def verify_email(email):
@@ -71,5 +98,13 @@ def update_user_telegram(email, user_id, username):
     )
 
 
-# def get_groups_id_by_title(title):
-#     return supabase.table("groups").select("id").eq("title", title).execute().data
+def update_exco_roles():
+    return (
+        supabase.table("exco_roles")
+        .upsert([{"role": role.role, "authority": role.authority} for role in Exco])
+        .execute()
+    )
+
+
+# def get_groups_id_by_role(role):
+#     return supabase.table("groups").select("id").eq("role", role).execute().data

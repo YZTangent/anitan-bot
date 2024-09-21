@@ -1,6 +1,7 @@
 import os
 import logging
 import database.dbcontext as botdb
+from database.exco_roles import Exco
 from utils.utils import test_valid_otp, test_valid_nus_email
 from cache.cache import otp_cache, authenticated_users_cache, Otp
 from datetime import datetime
@@ -31,9 +32,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 def require_auth(handler):
     async def wrapper(update, context):
-        if botdb.authenticate_member_by_id(
-            update.message.from_user.id
-        ) or botdb.authenticate_member_by_username_and_set_id(
+        if botdb.authenticate_user_with_telegram(
             update.message.from_user.username, update.message.from_user.id
         ):
             return await handler(update, context)
@@ -72,11 +71,16 @@ async def track_managed_group(update, context):
     adder = update.my_chat_member.from_user.id
 
     # check if the bot has just been made a group admin
-    # by a member of the exco
+    # by a member of the prescell
+    #
+    # We are also praying that the admin gives the bot the
+    # invite user permission else the bot won't work either
+    #
+    # TODO: add code to verify that bot has invite user permissions
     if (
         old_status == ChatMember.MEMBER
         and new_status == ChatMember.ADMINISTRATOR
-        and botdb.verify_admin(adder)
+        and botdb.verify_admin_by_sufficient_authority(adder, Exco.PRESCELL)
     ):
         group_id = update.my_chat_member.chat.id
         group_title = update.my_chat_member.chat.title
@@ -98,11 +102,7 @@ async def track_managed_group(update, context):
 
 async def validate_join_req_handler(update, context):
     request = update.chat_join_request
-    if botdb.authenticate_member_by_id(
-        request.user.id
-    ) or botdb.authenticate_member_by_username_and_set_id(
-        request.user.username, request.user.id
-    ):
+    if botdb.authenticate_user_with_telegram(request.user.username, request.user.id):
         context.bot.approve_chat_join_request(request.chat.id, request.user.id)
     else:
         await context.bot.send_message(request.user_chat_id, "sir pls sign up 4 cas :(")
@@ -197,6 +197,8 @@ async def start_handler(update, context):
 
 
 if __name__ == "__main__":
+    botdb.update_exco_roles()
+
     bot_token: str = os.environ.get("TELEGRAM_BOT_TOKEN")
 
     app = ApplicationBuilder().token(bot_token).build()
@@ -205,7 +207,8 @@ if __name__ == "__main__":
     app.add_handler(ChatMemberHandler(track_managed_group, block=False))
 
     # This handler automatically approves valid chat join requests.
-    app.add_handler(ChatJoinRequestHandler(validate_join_req_handler, block=False))
+    app.add_handler(ChatJoinRequestHandler(
+        validate_join_req_handler, block=False))
 
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("testAuth", auth_test_handler))

@@ -22,11 +22,8 @@ class Exco(Enum):
     CASUALS_EXCO = ("Casuals Exco", 1)
     TOPICS_EXCO = ("Topics Exco", 1)
     PALETTE_EXCO = ("Palette Exco", 1)
+    EXCO = ("Exco", 1)
 
-    def __init__(self, title, authority):
-        self.title = title
+    def __init__(self, role, authority):
+        self.role = role
         self.authority = authority
-
-
-for role in Exco:
-    print(role.title, role.authority)
