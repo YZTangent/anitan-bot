@@ -6,21 +6,6 @@ key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
 
 
-def get_user_by_telegram_id(user_id):
-    return supabase.table("users").select("*").eq("telegram_id", user_id).single().data
-
-
-def get_user_by_telegram_handle(username):
-    return (
-        supabase.table("users")
-        .select("*")
-        .eq("telegram_username", username)
-        .single()
-        .execute()
-        .data
-    )
-
-
 # Ideally for users authenticating with the bot for the first time,
 # but realistically we have no way of knowing.
 # This function checks if the user's username exists in the users table
@@ -71,6 +56,10 @@ def update_managed_groups(group_id, group_title, join_link):
 
 def get_groups():
     return supabase.table("groups").select("title, join_link").execute().data
+
+
+def verify_email(email):
+    return supabase.rpc("verify_email", {"email": email}).execute().data
 
 
 # def get_groups_id_by_title(title):

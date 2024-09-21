@@ -1,14 +1,17 @@
 import os
 import logging
 import database.dbcontext as botdb
-
-# import argparse
+from utils.utils import test_valid_otp, test_valid_nus_email
+from cache.cache import otp_cache, authenticated_users_cache, Otp
+from datetime import datetime
+from auth.auth_context import send_otp
 from telegram import ChatMember
 from telegram.ext import (
     ApplicationBuilder,
     ChatJoinRequestHandler,
     ChatMemberHandler,
     CommandHandler,
+    ConversationHandler,
     MessageHandler,
     filters,
 )
@@ -102,11 +105,91 @@ async def validate_join_req_handler(update, context):
     ):
         context.bot.approve_chat_join_request(request.chat.id, request.user.id)
     else:
-        pass
+        await context.bot.send_message(request.user_chat_id, "sir pls sign up 4 cas :(")
+
+
+EMAIL, OTP = range(2)
 
 
 async def begin_email_auth_handler(update, context):
-    pass
+    await update.message.reply_text(
+        """Please send me your nus email that you used to sign up with NUSCAS :)
+        \nSend me /cancel to cancel the login process!"""
+    )
+    return EMAIL
+
+
+async def get_email_handler(update, context):
+    email = update.message.text
+
+    if not test_valid_nus_email(email):
+        await update.messge.reply_text("Please input a valid nus email!")
+        return EMAIL
+
+    if not botdb.verify_email(email):
+        await update.message.reply_text(
+            "You don't appear to be registered member of CAS :( Please contact our Treasurer or Secretary if there is a mistake."
+        )
+
+    otp = send_otp(email)
+
+    # Side note but I don't really like how the dependencies are lookings here
+    # but fuck it ill fix this shit later or smth
+    otp_cache[update.message.from_user.id] = Otp(email, otp[0], otp[1])
+
+    update.message.reply_text(
+        f"""OTP has been sent to {email}.
+        Please send me your OTP within 5 minutes."""
+    )
+    return OTP
+
+
+async def otp_handler(update, context):
+    no_existing_otp_msg = (
+        "Something has went wrong, please request for an OTP again by sending /login."
+    )
+    incorrect_otp_msg = "Please enter the correct OTP!"
+    expired_otp_message = (
+        "Your OTP has expired. Please get a new one by sending /login."
+    )
+
+    correct_otp = otp_cache.get(update.message.from_user.id)
+    otp = update.message.text
+
+    # Something has went terribly wrong here, if they can be here in this part
+    # of the conversation without a cached otp.
+    if not correct_otp:
+        await update.message.reply_text(no_existing_otp_msg)
+        return ConversationHandler.END
+
+    if not test_valid_otp(otp):
+        await update.message.reply_text(incorrect_otp_msg)
+        return OTP
+
+    if correct_otp.expires_at < datetime.now():
+        await update.message.reply_text(expired_otp_message)
+        return ConversationHandler.END
+
+    if otp != correct_otp.otp:
+        await update.message.reply_text(incorrect_otp_msg)
+        return OTP
+
+    assert otp == correct_otp.otp
+    user_id = update.message.from_user.id
+    username = update.message.from_user.username
+
+    botdb.update_user_telegram(correct_otp.email, user_id, username)
+    authenticated_users_cache.add(user_id)
+
+    await update.message.reply_text(
+        "You're logged in now! Join us at our various interest groups! :) "
+    )
+    return ConversationHandler.END
+
+
+async def cancel_login_handler(update, context):
+    await update.message.reply_text("login cancelled")
+    return ConversationHandler.END
 
 
 async def start_handler(update, context):
@@ -114,22 +197,33 @@ async def start_handler(update, context):
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("-t", help="Testing mode flag.")
-    # args= parser.parse_args()
-
     bot_token: str = os.environ.get("TELEGRAM_BOT_TOKEN")
 
     app = ApplicationBuilder().token(bot_token).build()
 
     # This handler listens to updates to the bot only.
     app.add_handler(ChatMemberHandler(track_managed_group, block=False))
+
+    # This handler automatically approves valid chat join requests.
     app.add_handler(ChatJoinRequestHandler(
         validate_join_req_handler, block=False))
 
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("testAuth", auth_test_handler))
     app.add_handler(CommandHandler("groups", list_groups))
+
+    # Login conversation handler.
+    app.add_handler(
+        ConversationHandler(
+            entry_points=[CommandHandler("login", begin_email_auth_handler)],
+            states={
+                EMAIL: [MessageHandler(filters.TEXT, get_email_handler)],
+                OTP: [MessageHandler(filters.TEXT, otp_handler)],
+            },
+            fallbacks=[CommandHandler("cancel", cancel_login_handler)],
+            conversation_timeout=300,
+        )
+    )
 
     app.add_handler(MessageHandler(filters.TEXT, message_handler))
 
