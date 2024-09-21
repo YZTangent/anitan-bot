@@ -36,7 +36,7 @@ def require_auth(handler):
             update.message.from_user.username, update.message.from_user.id
         ):
             return await handler(update, context)
-        return await update.message.reply_text("sir pls sign up 4 cas :(")
+        return await update.message.reply_text("Please login using /login.")
 
     return wrapper
 
@@ -105,7 +105,9 @@ async def validate_join_req_handler(update, context):
     if botdb.authenticate_user_with_telegram(request.user.username, request.user.id):
         context.bot.approve_chat_join_request(request.chat.id, request.user.id)
     else:
-        await context.bot.send_message(request.user_chat_id, "sir pls sign up 4 cas :(")
+        await context.bot.send_message(
+            request.user_chat_id, "Please login using /login."
+        )
 
 
 EMAIL, OTP = range(2)
@@ -128,7 +130,8 @@ async def get_email_handler(update, context):
 
     if not botdb.verify_email(email):
         await update.message.reply_text(
-            "You don't appear to be registered member of CAS :( Please contact our Treasurer or Secretary if there is a mistake."
+            """You don't appear to be registered member of CAS :(
+            \nPlease contact our Treasurer or Secretary if there is a mistake."""
         )
 
     otp = send_otp(email)
