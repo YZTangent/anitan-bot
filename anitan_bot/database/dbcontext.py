@@ -62,5 +62,14 @@ def verify_email(email):
     return supabase.rpc("verify_email", {"email": email}).execute().data
 
 
+def update_user_telegram(email, user_id, username):
+    return (
+        supabase.table("users")
+        .update({"telegram_username": username, "telegram_id": user_id})
+        .eq("nus_email", email)
+        .execute()
+    )
+
+
 # def get_groups_id_by_title(title):
 #     return supabase.table("groups").select("id").eq("title", title).execute().data

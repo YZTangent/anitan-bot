@@ -56,7 +56,7 @@ async def list_groups(update, context):
         f"""User {update.message.from_user.username}
         requested for group links. Returning groups:\n{groups}"""
     )
-    await update.message.reply_text(f"Available groups:\n{groups}")
+    await update.message.reply_text(f"Available groups:\n\n{groups}")
 
 
 @require_auth
@@ -114,7 +114,7 @@ EMAIL, OTP = range(2)
 async def begin_email_auth_handler(update, context):
     await update.message.reply_text(
         """Please send me your nus email that you used to sign up with NUSCAS :)
-        \nSend me /cancel to cancel the login process!"""
+        \nSend me /cancel to cancel the login process."""
     )
     return EMAIL
 
@@ -137,9 +137,9 @@ async def get_email_handler(update, context):
     # but fuck it ill fix this shit later or smth
     otp_cache[update.message.from_user.id] = Otp(email, otp[0], otp[1])
 
-    update.message.reply_text(
+    await update.message.reply_text(
         f"""OTP has been sent to {email}.
-        Please send me your OTP within 5 minutes."""
+        \nPlease send me your OTP within 5 minutes."""
     )
     return OTP
 
@@ -205,8 +205,7 @@ if __name__ == "__main__":
     app.add_handler(ChatMemberHandler(track_managed_group, block=False))
 
     # This handler automatically approves valid chat join requests.
-    app.add_handler(ChatJoinRequestHandler(
-        validate_join_req_handler, block=False))
+    app.add_handler(ChatJoinRequestHandler(validate_join_req_handler, block=False))
 
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("testAuth", auth_test_handler))

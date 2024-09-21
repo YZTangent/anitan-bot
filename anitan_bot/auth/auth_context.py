@@ -35,10 +35,8 @@ def send_otp(receiver_email):
         server = smtplib.SMTP("smtp.gmail.com", 587)
         server.ehlo()
         server.starttls()
-        print(sender_email, sender_password)
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, receiver_email, msg.as_string())
-        print(f"OTP sent to {receiver_email}")
         server.quit()
 
         return otp
