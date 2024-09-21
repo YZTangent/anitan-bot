@@ -66,23 +66,24 @@ def verify_admin_by_sufficient_authority(user_id, authority):
 
 def verify_admin_by_role(user_id, role):
     return (
-        supabase.rpc("verify_admin_by_role", {"user_id": user_id, "role": role})
+        supabase.rpc("verify_admin_by_role", {
+                     "user_id": user_id, "role": role})
         .execute()
         .data
     )
 
 
-def update_managed_groups(group_id, group_role, join_link):
+def update_managed_groups(group_id, group_title, join_link):
     return (
         supabase.table("groups")
-        .upsert({"id": group_id, "role": group_role, "join_link": join_link})
+        .upsert({"id": group_id, "title": group_title, "join_link": join_link})
         .execute()
         .data
     )
 
 
 def get_groups():
-    return supabase.table("groups").select("role, join_link").execute().data
+    return supabase.table("groups").select("title, join_link").execute().data
 
 
 def verify_email(email):
