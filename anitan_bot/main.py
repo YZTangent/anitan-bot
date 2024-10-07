@@ -67,7 +67,7 @@ async def auth_test_handler(update, context):
 # one to promote the bot to an administator, it will add the group to the list
 # of groups it manage if the user adding the bot as adiministator is an exco.
 async def track_managed_group(update, context):
-    old_status, new_status = update.my_chat_member.difference().get("status")
+    _, new_status = update.my_chat_member.difference().get("status")
     adder = update.my_chat_member.from_user.id
 
     # check if the bot has just been made a group admin
@@ -78,8 +78,7 @@ async def track_managed_group(update, context):
     #
     # TODO: add code to verify that bot has invite user permissions
     if (
-        old_status == ChatMember.MEMBER
-        and new_status == ChatMember.ADMINISTRATOR
+        new_status == ChatMember.ADMINISTRATOR
         and botdb.verify_admin_by_sufficient_authority(adder, Exco.PRESCELL)
     ):
         group_id = update.my_chat_member.chat.id
